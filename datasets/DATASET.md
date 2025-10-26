@@ -1,0 +1,5 @@
+| Tên                                      | Link                                                                                                                   | Mô tả                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **RDD2022 (Road Damage Detection 2022)** | [https://rdd2022.sekilab.global/](https://rdd2022.sekilab.global/)                                                     | Bộ dữ liệu đa quốc gia (~26,000 ảnh). Có 4 loại hư hại (crack, pothole, rutting, etc.). |
+| **Pothole-600 (Kaggle)**                 | [https://www.kaggle.com/datasets/atulyakumar98/pothole-600](https://www.kaggle.com/datasets/atulyakumar98/pothole-600) | 600 ảnh có/không có ổ gà – phù hợp nếu bạn muốn thử nghiệm mô hình nhẹ hơn.             |
+
