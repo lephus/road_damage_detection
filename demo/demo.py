@@ -1,12 +1,18 @@
-# pip install ultralytics opencv-python
+# Tạo môi trường ảo
+# python3 -m venv yolov8-env
+
+# Kích hoạt môi trường
+# source yolov8-env/bin/activate
+
 import os
 import cv2
 from ultralytics import YOLO
 
 # Paths
-model_path = "path/to/your/best.pt"  # Update with the path to your trained model
-test_images_dir = "datasets/tests/images"
-output_dir = "datasets/tests/outputs"  # Folder to save annotated images
+# model_path = "../model/best_rdd2022.pt"  # Update with the path to your trained model
+model_path = "../outputs/weights/best.pt"
+test_images_dir = "../datasets/tests/images"
+output_dir = "../datasets/tests/outputs"  # Folder to save annotated images
 os.makedirs(output_dir, exist_ok=True)
 
 # Load the YOLOv8 model

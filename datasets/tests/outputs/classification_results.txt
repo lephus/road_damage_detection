@@ -1,0 +1,184 @@
+=== Kết quả phân loại ===
+Tổng số ảnh: 30
+Đường hỏng (có hư hại): 30
+Đường tốt (không hư hại): 0
+
+Chi tiết từng ảnh:
+
+Ảnh: 001993.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.53)
+
+Ảnh: 002242.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.57)
+
+Ảnh: 001987.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Transverse Crack (Confidence: 0.73)
+
+Ảnh: 001986.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.89)
+  - Transverse Crack (Confidence: 0.71)
+
+Ảnh: 002243.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.63)
+
+Ảnh: 001992.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.82)
+  - Longitudinal Crack (Confidence: 0.58)
+
+Ảnh: 001984.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.87)
+  - Alligator Crack (Confidence: 0.72)
+  - Pothole (Confidence: 0.62)
+
+Ảnh: 001990.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.92)
+  - Longitudinal Crack (Confidence: 0.74)
+
+Ảnh: 001991.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.75)
+  - Longitudinal Crack (Confidence: 0.59)
+
+Ảnh: 001985.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.88)
+  - Alligator Crack (Confidence: 0.75)
+  - Transverse Crack (Confidence: 0.60)
+
+Ảnh: 002250.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.82)
+
+Ảnh: 001995.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Transverse Crack (Confidence: 0.81)
+
+Ảnh: 002244.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.88)
+
+Ảnh: 002245.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.76)
+  - Longitudinal Crack (Confidence: 0.67)
+  - Transverse Crack (Confidence: 0.62)
+
+Ảnh: 001994.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Transverse Crack (Confidence: 0.68)
+  - Transverse Crack (Confidence: 0.53)
+
+Ảnh: 002251.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.77)
+  - Alligator Crack (Confidence: 0.58)
+
+Ảnh: 001996.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Transverse Crack (Confidence: 0.76)
+  - Longitudinal Crack (Confidence: 0.70)
+  - Longitudinal Crack (Confidence: 0.65)
+  - Transverse Crack (Confidence: 0.58)
+
+Ảnh: 002247.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.50)
+
+Ảnh: 002246.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.90)
+  - Transverse Crack (Confidence: 0.77)
+
+Ảnh: 001997.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.95)
+
+Ảnh: 002248.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.55)
+  - Longitudinal Crack (Confidence: 0.53)
+  - Longitudinal Crack (Confidence: 0.50)
+
+Ảnh: 001999.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.86)
+  - Longitudinal Crack (Confidence: 0.76)
+  - Transverse Crack (Confidence: 0.74)
+
+Ảnh: 001998.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Pothole (Confidence: 0.62)
+
+Ảnh: 002249.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Transverse Crack (Confidence: 0.74)
+  - Transverse Crack (Confidence: 0.53)
+
+Ảnh: 001988.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.90)
+  - Longitudinal Crack (Confidence: 0.64)
+
+Ảnh: 001989.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.90)
+  - Alligator Crack (Confidence: 0.80)
+  - Pothole (Confidence: 0.78)
+  - Longitudinal Crack (Confidence: 0.60)
+
+Ảnh: 002002.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.87)
+  - Longitudinal Crack (Confidence: 0.85)
+  - Transverse Crack (Confidence: 0.71)
+
+Ảnh: 002003.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.75)
+
+Ảnh: 002001.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Alligator Crack (Confidence: 0.87)
+  - Alligator Crack (Confidence: 0.85)
+
+Ảnh: 002000.jpg
+Trạng thái: Đường hỏng
+Hư hại phát hiện:
+  - Longitudinal Crack (Confidence: 0.85)

@@ -6,18 +6,25 @@ from pathlib import Path
 # Define dataset paths based on provided structure
 dataset_paths = {
     'India': {
-        'train_images': '/kaggle/input/dut-rdd/RDD2022_India/India/train/images',
-        'train_annotations': '/kaggle/input/dut-rdd/RDD2022_India/India/train/annotations',
-        'test_images': '/kaggle/input/dut-rdd/RDD2022_India/India/test/images'
+        
+        'train_images': '/content/RDD2022_India/India/train/images',
+        'train_annotations': '/content/RDD2022_India/India/train/annotations',
+        'test_images': '/content/RDD2022_India/India/test/images'
+    },
+    'czech': {
+        
+        'train_images': '/content/RDD2022_Czech/train/images',
+        'train_annotations': '/content/RDD2022_Czech/train/annotations',
+        'test_images': '/content/RDD2022_Czech/test/images'
     },
     'China_MotorBike': {
-        'train_images': '/kaggle/input/dut-rdd/RDD2022_China_MotorBike/China_MotorBike/train/images',
-        'train_annotations': '/kaggle/input/dut-rdd/RDD2022_China_MotorBike/China_MotorBike/train/annotations',
-        'test_images': '/kaggle/input/dut-rdd/RDD2022_China_MotorBike/China_MotorBike/test/images'
+        'train_images': '/content/RDD2022_China_MotorBike/China_MotorBike/train/images',
+        'train_annotations': '/content/RDD2022_China_MotorBike/China_MotorBike/train/annotations',
+        'test_images': '/content/RDD2022_China_MotorBike/China_MotorBike/test/images'
     },
     'China_Drone': {
-        'train_images': '/kaggle/input/dut-rdd/RDD2022_China_Drone/China_Drone/train/images',
-        'train_annotations': '/kaggle/input/dut-rdd/RDD2022_China_Drone/China_Drone/train/annotations'
+        'train_images': '/content/RDD2022_China_Drone/China_Drone/train/images',
+        'train_annotations': '/content/RDD2022_China_Drone/China_Drone/train/annotations'
     }
 }
 
