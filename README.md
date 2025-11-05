@@ -293,41 +293,6 @@ outputs/
 
 ---
 
-## 🎓 Ứng dụng thực tế
-
-Hệ thống này có thể được ứng dụng trong:
-
-- 🏗️ **Bảo trì hạ tầng**: Tự động phát hiện hư hỏng để lập kế hoạch sửa chữa
-- 🚗 **Smart City**: Tích hợp vào hệ thống quản lý giao thông thông minh
-- 📱 **Mobile Apps**: Ứng dụng di động để người dùng báo cáo hư hỏng
-- 🚁 **Drone Inspection**: Phát hiện hư hỏng từ ảnh chụp bằng drone
-- 📊 **Data Analysis**: Phân tích xu hướng hư hỏng theo thời gian và địa điểm
-
----
-
-## 📝 License
-
-Dự án này được phát triển cho mục đích học tập và nghiên cứu.
-
----
-
-## 👨‍💻 Tác giả
-
-**LÊ HỮU PHÚ**
-- MSSV: 102250404
-- Lớp: K50.KMT_UD
-- Email: phule9225@gmail.com
-
----
-
-## 🙏 Lời cảm ơn
-
-- Cảm ơn Ultralytics team cho YOLOv8 framework
-- Cảm ơn RDD2022 team cho bộ dataset chất lượng
-- Cảm ơn Kaggle platform cho môi trường training
-
----
-
 **Cập nhật lần cuối**: 2025
 
 **Phiên bản**: 1.0
