@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+road_damage_env/
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Output directories
+outputs/
+results/
+inference_results/
+runs/
+
+# Datasets (usually too large for git)
+datasets/
+data/
+RDD2022/
+
+# Models (too large for git)
+*.pt
+*.pth
+*.weights
+*.h5
+*.keras
+
+# Logs
+*.log
+logs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Training artifacts
+wandb/
+tensorboard/
+
+# Cache
+.cache/
+*.cache
+

@@ -1,0 +1,170 @@
+# Road Damage Detection - Configuration File
+
+# Dataset Configuration
+dataset:
+  # Root directory containing all datasets
+  # Update this path to your actual dataset location
+  root: /path/to/your/RDD2022/dataset
+  
+  # Dataset splits ratio
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+  
+  # Class names (RDD2022 standard)
+  classes:
+    - D00  # Lateral crack
+    - D10  # Longitudinal crack
+    - D20  # Alligator crack
+    - D40  # Pothole
+    - D43  # Cross walk blur
+    - D44  # Whiteline blur
+
+# Training Configuration
+training:
+  # Number of epochs (minimum 100 recommended)
+  epochs: 100
+  
+  # Batch size (adjust based on your GPU/RAM)
+  # Recommended: 16 for Mac M4 with 16GB RAM
+  #              32 for Mac M4 with 32GB+ RAM
+  #              8 if you encounter out-of-memory errors
+  batch_size: 16
+  
+  # Image size (640x640 is standard for YOLO)
+  img_size: 640
+  
+  # Model variant
+  # Options: yolov8n.pt, yolov8s.pt, yolov8m.pt, yolov8l.pt, yolov8x.pt
+  # yolov8n: fastest, smallest (for quick testing)
+  # yolov8s: small, fast
+  # yolov8m: medium (RECOMMENDED - good balance)
+  # yolov8l: large, more accurate
+  # yolov8x: extra large, most accurate but slowest
+  model: yolov8m.pt
+  
+  # Device
+  # Options: 'auto', 'cpu', 'mps', 'cuda'
+  # 'auto' will automatically detect best available device
+  device: auto
+  
+  # Learning rate
+  learning_rate: 0.001
+  
+  # Optimizer settings
+  optimizer:
+    type: auto  # auto, SGD, Adam, AdamW
+    momentum: 0.937
+    weight_decay: 0.0005
+  
+  # Learning rate scheduler
+  lr_scheduler:
+    type: cosine  # cosine, linear, constant
+    warmup_epochs: 3
+  
+  # Early stopping
+  patience: 20  # Stop if no improvement for 20 epochs
+  
+  # Save checkpoints
+  save_period: 10  # Save checkpoint every 10 epochs
+  
+  # Data augmentation
+  augmentation:
+    enabled: true
+    hsv_h: 0.015      # Hue variation
+    hsv_s: 0.7        # Saturation variation
+    hsv_v: 0.4        # Value variation
+    degrees: 0.0      # Rotation range
+    translate: 0.1    # Translation range
+    scale: 0.5        # Scale range
+    shear: 0.0        # Shear range
+    perspective: 0.0  # Perspective range
+    flipud: 0.0       # Vertical flip probability
+    fliplr: 0.5       # Horizontal flip probability
+    mosaic: 1.0       # Mosaic augmentation probability
+    mixup: 0.0        # Mixup augmentation probability
+  
+  # Mixed precision training (faster on Apple Silicon)
+  amp: true
+
+# Output Configuration
+output:
+  # Output directory for all results
+  dir: ./outputs
+  
+  # Subdirectories
+  models_dir: models
+  metrics_dir: metrics
+  visualizations_dir: visualizations
+  
+  # What to save
+  save_best_model: true
+  save_last_model: true
+  save_metrics: true
+  save_plots: true
+  save_predictions: true
+
+# Evaluation Configuration
+evaluation:
+  # Confidence threshold for detection
+  conf_threshold: 0.25
+  
+  # IoU threshold for NMS
+  iou_threshold: 0.45
+  
+  # Number of sample images to visualize
+  num_visualization_samples: 10
+  
+  # t-SNE configuration
+  tsne:
+    enabled: true
+    n_components: 2
+    perplexity: 30
+    n_iter: 1000
+    max_samples: 500  # Max images to use for t-SNE
+
+# Target Metrics
+target:
+  # Target accuracy (will display warning if not reached)
+  accuracy: 0.85  # 85%
+  
+  # Target F1-score
+  f1_score: 0.80  # 80%
+
+# Logging Configuration
+logging:
+  # Verbosity level
+  verbose: true
+  
+  # Log to file
+  log_file: training.log
+  
+  # TensorBoard
+  tensorboard: false
+
+# Hardware-specific optimizations
+hardware:
+  # Number of data loading workers
+  # Auto will use CPU count - 1
+  num_workers: auto
+  
+  # Pin memory (faster data transfer to GPU)
+  pin_memory: true
+  
+  # Prefetch factor
+  prefetch_factor: 2
+
+# Inference Configuration (for inference.py)
+inference:
+  # Default confidence threshold
+  conf_threshold: 0.25
+  
+  # Maximum detections per image
+  max_det: 300
+  
+  # Save visualizations
+  save_visualizations: true
+  
+  # Output format
+  output_format: image  # image, json, txt, all
+
