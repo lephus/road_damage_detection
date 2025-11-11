@@ -11,6 +11,7 @@ import json
 import random
 import shutil
 import argparse
+import gc
 from pathlib import Path
 from datetime import datetime
 from collections import Counter
@@ -36,6 +37,9 @@ from sklearn.preprocessing import label_binarize
 # YOLOv8
 from ultralytics import YOLO
 
+# Weights & Biases for experiment tracking
+import wandb
+
 # Set random seeds for reproducibility
 random.seed(42)
 np.random.seed(42)
@@ -47,7 +51,7 @@ if torch.cuda.is_available():
 class RoadDamageTrainer:
     """Main trainer class for road damage detection"""
     
-    def __init__(self, dataset_root, output_dir, epochs=100, batch_size=16, img_size=640, max_images_per_dataset=None):
+    def __init__(self, dataset_root, output_dir, epochs=100, batch_size=16, img_size=640, wandb_api_key=None, dataset_limit=None, model_name='yolov8s.pt'):
         """
         Initialize the trainer
         
@@ -57,19 +61,60 @@ class RoadDamageTrainer:
             epochs: Number of training epochs (minimum 100)
             batch_size: Batch size for training
             img_size: Image size for training (640x640)
-            max_images_per_dataset: Maximum images to load per dataset (None = no limit)
+            wandb_api_key: Weights & Biases API key for tracking
+            dataset_limit: Maximum number of images to use from dataset (None = use all)
+            model_name: YOLOv8 model variant (yolov8n/s/m/l/x.pt), default: yolov8s.pt
         """
         self.dataset_root = dataset_root
         self.output_dir = output_dir
         self.epochs = max(epochs, 100)  # Ensure minimum 100 epochs
-        self.batch_size = batch_size
         self.img_size = img_size
-        self.max_images_per_dataset = max_images_per_dataset
+        self.dataset_limit = dataset_limit
+        self.model_name = model_name
+        
+        # Auto-adjust batch size based on available memory and device
+        # Detect device first
+        if torch.cuda.is_available():
+            self.device = 'cuda'
+            self.batch_size = batch_size
+        elif torch.backends.mps.is_available():
+            self.device = 'mps'
+            # MPS (Apple Silicon) has limited memory - reduce batch size
+            self.batch_size = min(batch_size, 8)
+            print(f"⚠️  MPS device detected - reducing batch size from {batch_size} to {self.batch_size} to prevent OOM")
+        else:
+            self.device = 'cpu'
+            self.batch_size = min(batch_size, 4)
+            print(f"⚠️  CPU device detected - reducing batch size from {batch_size} to {self.batch_size}")
         
         # Valid damage classes
         self.VALID_CLASSES = ['D00', 'D10', 'D20', 'D40', 'D43', 'D44']
         self.class_to_idx = {cls: idx for idx, cls in enumerate(self.VALID_CLASSES)}
         self.num_classes = len(self.VALID_CLASSES)
+        
+        # Initialize Weights & Biases
+        if wandb_api_key:
+            wandb.login(key=wandb_api_key)
+        
+        # Initialize wandb run
+        model_short_name = self.model_name.replace('.pt', '')
+        run_name = f"road_damage_{model_short_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        wandb.init(
+            project="road-damage-detection",
+            name=run_name,
+            config={
+                "model": self.model_name,
+                "epochs": self.epochs,
+                "batch_size": self.batch_size,
+                "img_size": self.img_size,
+                "num_classes": self.num_classes,
+                "classes": self.VALID_CLASSES,
+                "dataset_root": str(dataset_root),
+                "output_dir": str(output_dir),
+                "dataset_limit": self.dataset_limit,
+                "device": self.device,  # Device detected before wandb init
+            }
+        )
         
         # Dataset paths configuration
         self.dataset_paths = {
@@ -113,19 +158,16 @@ class RoadDamageTrainer:
             'epochs': []
         }
         
-        # Device configuration (optimized for Mac M4)
-        if torch.cuda.is_available():
-            self.device = 'cuda'
-        elif torch.backends.mps.is_available():
-            self.device = 'mps'  # Apple Silicon GPU
-        else:
-            self.device = 'cpu'
-        
+        # Print configuration
         print(f"🖥️  Using device: {self.device}")
+        print(f"🤖 Model: {self.model_name}")
         print(f"📊 Training for {self.epochs} epochs")
         print(f"🎯 Target accuracy: >= 85%")
-        if self.max_images_per_dataset:
-            print(f"⚠️  Limited mode: Max {self.max_images_per_dataset} images per dataset")
+        if self.dataset_limit is not None:
+            print(f"📉 Dataset limit: {self.dataset_limit} images")
+        else:
+            print(f"📉 Dataset limit: None (using all available images)")
+        print(f"🔗 W&B Run: {wandb.run.url if wandb.run else 'Not initialized'}")
         
     def setup_directories(self):
         """Setup output directory structure"""
@@ -210,17 +252,7 @@ class RoadDamageTrainer:
                 continue
             
             dataset_count = 0
-            img_files = os.listdir(img_dir)
-            
-            # Limit number of images if specified
-            if self.max_images_per_dataset:
-                img_files = img_files[:self.max_images_per_dataset]
-            
-            for img_file in tqdm(img_files, desc=f"Loading {dataset_name}"):
-                # Check if reached limit
-                if self.max_images_per_dataset and dataset_count >= self.max_images_per_dataset:
-                    break
-                
+            for img_file in tqdm(os.listdir(img_dir), desc=f"Loading {dataset_name}"):
                 if not img_file.endswith(('.jpg', '.png', '.jpeg')):
                     continue
                 
@@ -251,9 +283,40 @@ class RoadDamageTrainer:
         
         print(f"\n✅ Total dataset: {len(all_images)} valid image-annotation pairs")
         
+        # Apply dataset limit if specified
+        original_count = len(all_images)
+        if self.dataset_limit is not None and self.dataset_limit > 0:
+            if len(all_images) > self.dataset_limit:
+                print(f"\n📊 Limiting dataset from {len(all_images)} to {self.dataset_limit} images...")
+                # Randomly sample to maintain diversity
+                indices = random.sample(range(len(all_images)), self.dataset_limit)
+                all_images = [all_images[i] for i in indices]
+                all_labels = [all_labels[i] for i in indices]
+                print(f"✅ Dataset limited to {len(all_images)} images")
+            else:
+                print(f"ℹ️  Dataset limit ({self.dataset_limit}) is greater than available images ({len(all_images)}), using all images")
+        
         # Save dataset statistics
+        stats = {
+            **dataset_stats,
+            "original_total": original_count,
+            "final_total": len(all_images),
+            "limit_applied": self.dataset_limit if self.dataset_limit is not None else None
+        }
         with open(os.path.join(self.output_dir, 'metrics', 'dataset_stats.json'), 'w') as f:
-            json.dump(dataset_stats, f, indent=2)
+            json.dump(stats, f, indent=2)
+        
+        # Log dataset statistics to wandb
+        wandb.log({
+            "dataset/original_total_images": original_count,
+            "dataset/total_images": len(all_images),
+            "dataset/limit_applied": self.dataset_limit if self.dataset_limit is not None else original_count
+        })
+        for dataset_name, count in dataset_stats.items():
+            wandb.log({f"dataset/{dataset_name}": count})
+        
+        # Clear memory after dataset loading
+        gc.collect()
         
         return all_images, all_labels
     
@@ -274,9 +337,14 @@ class RoadDamageTrainer:
                                                         total=len(images)):
             # Copy and resize image
             img = cv2.imread(img_path)
+            if img is None:
+                continue
             img = cv2.resize(img, (self.img_size, self.img_size))
             img_name = os.path.basename(img_path)
             cv2.imwrite(os.path.join(img_out_dir, img_name), img)
+            
+            # Free memory
+            del img
             
             # Save YOLO annotations
             lbl_path = os.path.join(lbl_out_dir, f"{img_name.split('.')[0]}.txt")
@@ -309,9 +377,19 @@ class RoadDamageTrainer:
         self.preprocess_and_save(val_imgs, val_lbls, 'val')
         self.preprocess_and_save(test_imgs, test_lbls, 'test')
         
+        # Clear memory after preprocessing
+        gc.collect()
+        
         print(f"  Train: {len(train_imgs)} images")
         print(f"  Val: {len(val_imgs)} images")
         print(f"  Test: {len(test_imgs)} images")
+        
+        # Log split sizes to wandb
+        wandb.log({
+            "dataset/train_size": len(train_imgs),
+            "dataset/val_size": len(val_imgs),
+            "dataset/test_size": len(test_imgs)
+        })
         
         return len(train_imgs), len(val_imgs), len(test_imgs)
     
@@ -332,30 +410,39 @@ names: {self.VALID_CLASSES}
         print(f"✅ YOLO config created: {config_path}")
         return config_path
     
-    def train(self, model_name='yolov8m.pt'):
+    def train(self):
         """
         Train the YOLO model
-        
-        Args:
-            model_name: Pretrained model name (yolov8n, yolov8s, yolov8m, yolov8l, yolov8x)
         
         Returns:
             model: Trained model
             results: Training results
             training_time: Total training time in seconds
         """
-        print(f"\n🚀 Starting training with {model_name}...")
+        print(f"\n🚀 Starting training with {self.model_name}...")
         print(f"⏱️  Epochs: {self.epochs}")
         print(f"📦 Batch size: {self.batch_size}")
         print(f"🖼️  Image size: {self.img_size}x{self.img_size}")
+        print(f"🖥️  Device: {self.device}")
+        
+        # Clear memory before training
+        gc.collect()
+        if self.device == 'cuda':
+            torch.cuda.empty_cache()
+        elif self.device == 'mps':
+            torch.mps.empty_cache()
         
         # Initialize model
-        model = YOLO(model_name)
+        model = YOLO(self.model_name)
         
         # Start timing
         start_time = time.time()
         
-        # Train the model
+        # Configure training parameters based on device
+        # For MPS, disable mixed precision (AMP) as it can cause memory issues
+        use_amp = True if self.device == 'cuda' else False
+        
+        # Train the model (YOLOv8 will automatically log to wandb if initialized)
         results = model.train(
             data=os.path.join(self.output_dir, 'data.yaml'),
             epochs=self.epochs,
@@ -366,14 +453,16 @@ names: {self.VALID_CLASSES}
             lr0=0.001,
             cos_lr=True,
             patience=20,
-            amp=True,  # Mixed precision training
+            amp=use_amp,  # Mixed precision training (disabled for MPS)
             save=True,
             save_period=10,  # Save checkpoint every 10 epochs
             project=os.path.join(self.output_dir, 'runs'),
             name='road_damage_detection',
             exist_ok=True,
             verbose=True,
-            plots=True
+            plots=True,
+            workers=2,  # Reduce workers to save memory
+            cache=False  # Don't cache images in RAM
         )
         
         # End timing
@@ -381,6 +470,13 @@ names: {self.VALID_CLASSES}
         
         print(f"\n✅ Training completed!")
         print(f"⏱️  Total training time: {training_time/3600:.2f} hours ({training_time:.2f} seconds)")
+        
+        # Log training time to wandb
+        wandb.log({
+            "training/total_time_seconds": training_time,
+            "training/total_time_minutes": training_time / 60,
+            "training/total_time_hours": training_time / 3600
+        })
         
         # Save training time
         with open(os.path.join(self.output_dir, 'metrics', 'training_time.txt'), 'w') as f:
@@ -393,6 +489,10 @@ names: {self.VALID_CLASSES}
         if os.path.exists(best_model_path):
             shutil.copy(best_model_path, os.path.join(self.output_dir, 'models', 'best_model.pt'))
             print(f"💾 Best model saved: {os.path.join(self.output_dir, 'models', 'best_model.pt')}")
+            # Log model artifact to wandb
+            artifact = wandb.Artifact('best_model', type='model')
+            artifact.add_file(os.path.join(self.output_dir, 'models', 'best_model.pt'))
+            wandb.log_artifact(artifact)
         
         return model, results, training_time
     
@@ -510,6 +610,9 @@ names: {self.VALID_CLASSES}
         plt.savefig(tsne_path, dpi=300, bbox_inches='tight')
         plt.close()
         
+        # Log t-SNE visualization to wandb
+        wandb.log({f"{split}/tsne": wandb.Image(tsne_path)})
+        
         print(f"  ✓ t-SNE plot saved: {tsne_path}")
     
     def evaluate_model(self, model, split='test'):
@@ -525,6 +628,13 @@ names: {self.VALID_CLASSES}
         """
         print(f"\n📊 Evaluating model on {split} set...")
         
+        # Clear memory before evaluation
+        gc.collect()
+        if self.device == 'cuda':
+            torch.cuda.empty_cache()
+        elif self.device == 'mps':
+            torch.mps.empty_cache()
+        
         # Get test images
         img_dir = os.path.join(self.output_dir, f'{split}/images')
         test_images = [os.path.join(img_dir, f) for f in os.listdir(img_dir) 
@@ -535,12 +645,15 @@ names: {self.VALID_CLASSES}
         y_scores = []
         
         # Perform predictions
-        for img_path in tqdm(test_images, desc="Evaluating"):
+        for idx, img_path in enumerate(tqdm(test_images, desc="Evaluating")):
             img = cv2.imread(img_path)
             if img is None:
                 continue
                 
             results = model.predict(img, conf=0.25, verbose=False)
+            
+            # Free image memory
+            del img
             
             # Get ground truth
             lbl_path = img_path.replace('/images/', '/labels/').replace('.jpg', '.txt').replace('.png', '.txt')
@@ -556,6 +669,12 @@ names: {self.VALID_CLASSES}
                 for box in results[0].boxes:
                     y_pred.append(int(box.cls))
                     y_scores.append(float(box.conf))
+            
+            # Periodic memory cleanup every 100 images
+            if idx > 0 and idx % 100 == 0:
+                gc.collect()
+                if self.device == 'mps':
+                    torch.mps.empty_cache()
         
         # Ensure we have predictions
         if len(y_true) == 0 or len(y_pred) == 0:
@@ -592,6 +711,14 @@ names: {self.VALID_CLASSES}
             'recall': float(recall),
             'f1_score': float(f1)
         }
+        
+        # Log metrics to wandb
+        wandb.log({
+            f"{split}/accuracy": accuracy,
+            f"{split}/precision": precision,
+            f"{split}/recall": recall,
+            f"{split}/f1_score": f1
+        })
         
         with open(os.path.join(self.output_dir, 'metrics', f'metrics_{split}.json'), 'w') as f:
             json.dump(metrics, f, indent=2)
@@ -630,6 +757,9 @@ names: {self.VALID_CLASSES}
         plt.savefig(cm_path, dpi=300, bbox_inches='tight')
         plt.close()
         
+        # Log confusion matrix to wandb
+        wandb.log({f"{split}/confusion_matrix": wandb.Image(cm_path)})
+        
         print(f"  ✓ Confusion matrix saved: {cm_path}")
     
     def plot_roc_curves(self, y_true, y_scores, split='test'):
@@ -661,6 +791,12 @@ names: {self.VALID_CLASSES}
         plt.savefig(roc_path, dpi=300, bbox_inches='tight')
         plt.close()
         
+        # Log ROC curve and AUC to wandb
+        wandb.log({
+            f"{split}/roc_curve": wandb.Image(roc_path),
+            f"{split}/auc": roc_auc
+        })
+        
         print(f"  ✓ ROC curve saved: {roc_path}")
         print(f"  📊 AUC: {roc_auc:.4f}")
         
@@ -684,6 +820,18 @@ names: {self.VALID_CLASSES}
         # Load results
         df = pd.read_csv(results_path)
         df.columns = df.columns.str.strip()  # Remove whitespace from column names
+        
+        # Log training metrics to wandb
+        for _, row in df.iterrows():
+            metrics_to_log = {}
+            for col in df.columns:
+                if col != 'epoch' and pd.notna(row[col]):
+                    try:
+                        metrics_to_log[f"training/{col}"] = float(row[col])
+                    except (ValueError, TypeError):
+                        continue
+            if metrics_to_log:
+                wandb.log(metrics_to_log, step=int(row['epoch']) if 'epoch' in df.columns else None)
         
         # Create comprehensive training plots
         fig, axes = plt.subplots(2, 3, figsize=(18, 10))
@@ -749,6 +897,9 @@ names: {self.VALID_CLASSES}
         plt.savefig(history_path, dpi=300, bbox_inches='tight')
         plt.close()
         
+        # Log training history to wandb
+        wandb.log({"training/history": wandb.Image(history_path)})
+        
         print(f"  ✓ Training history saved: {history_path}")
     
     def visualize_predictions(self, model, split='test', n_samples=10):
@@ -809,6 +960,9 @@ names: {self.VALID_CLASSES}
         plt.savefig(pred_path, dpi=300, bbox_inches='tight')
         plt.close()
         
+        # Log predictions visualization to wandb
+        wandb.log({f"{split}/sample_predictions": wandb.Image(pred_path)})
+        
         print(f"  ✓ Predictions visualization saved: {pred_path}")
     
     def run(self):
@@ -827,7 +981,7 @@ names: {self.VALID_CLASSES}
         self.create_yolo_config()
         
         # Train model
-        model, results, training_time = self.train(model_name='yolov8m.pt')
+        model, results, training_time = self.train()
         
         # Load best model for evaluation
         best_model_path = os.path.join(self.output_dir, 'models', 'best_model.pt')
@@ -861,27 +1015,40 @@ names: {self.VALID_CLASSES}
         if test_metrics:
             print(f"🎯 Test Accuracy: {test_metrics.get('accuracy', 0)*100:.2f}%")
             print(f"📊 Test F1-Score: {test_metrics.get('f1_score', 0):.4f}")
+        print(f"🔗 W&B Run: {wandb.run.url if wandb.run else 'Not initialized'}")
         print("="*70)
+        
+        # Finalize wandb run
+        wandb.finish()
 
 
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description='Road Damage Detection Training')
-    parser.add_argument('--dataset_root', type=str, required=True,
+    
+    # Get the workspace root (parent of the 'local' directory)
+    script_dir = Path(__file__).parent
+    workspace_root = script_dir.parent
+    default_dataset_root = workspace_root / 'datasets'
+    
+    parser.add_argument('--dataset_root', type=str, default=str(default_dataset_root),
                        help='Root directory containing datasets')
     parser.add_argument('--output_dir', type=str, default='./outputs',
                        help='Output directory for results')
     parser.add_argument('--epochs', type=int, default=100,
                        help='Number of training epochs (minimum 100)')
-    parser.add_argument('--batch_size', type=int, default=16,
-                       help='Batch size for training')
+    parser.add_argument('--batch_size', type=int, default=8,
+                       help='Batch size for training (default: 8, auto-adjusted based on device)')
     parser.add_argument('--img_size', type=int, default=640,
                        help='Image size for training')
-    parser.add_argument('--model', type=str, default='yolov8m.pt',
+    parser.add_argument('--wandb_api_key', type=str, 
+                       default='405f59a92c4a17c4554bfa1af4a298b4ec94495c',
+                       help='Weights & Biases API key for tracking')
+    parser.add_argument('--dataset_limit', type=int, default=None,
+                       help='Maximum number of images to use from dataset (None = use all)')
+    parser.add_argument('--model', type=str, default='yolov8s.pt',
                        choices=['yolov8n.pt', 'yolov8s.pt', 'yolov8m.pt', 'yolov8l.pt', 'yolov8x.pt'],
-                       help='YOLOv8 model variant')
-    parser.add_argument('--max_images', type=int, default=None,
-                       help='Maximum images per dataset (for limited resources). Default: None (no limit)')
+                       help='YOLOv8 model variant (default: yolov8s.pt - recommended for Mac M4)')
     
     args = parser.parse_args()
     
@@ -892,7 +1059,9 @@ def main():
         epochs=args.epochs,
         batch_size=args.batch_size,
         img_size=args.img_size,
-        max_images_per_dataset=args.max_images
+        wandb_api_key=args.wandb_api_key,
+        dataset_limit=args.dataset_limit,
+        model_name=args.model
     )
     
     # Run training
